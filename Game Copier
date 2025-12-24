@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Game-Copier</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background: #0b0f1a;
+        color: white;
+    }
+
+    #ui {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.65);
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        z-index: 10;
+        width: 300px;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: none;
+        outline: none;
+    }
+
+    button {
+        margin-top: 15px;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        border-radius: 6px;
+        background: #4c7dff;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    button:hover {
+        background: #3b65d8;
+    }
+
+    #status {
+        margin-top: 10px;
+        font-size: 14px;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <h2>Game-Copier</h2>
+    <p>Paste URL game</p>
+    <input id="urlInput" placeholder="https://www.roblox.com/..." />
+    <button onclick="copyGame()">Copy</button>
+    <div id="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+/* ---------- WEBGL BACKGROUND ---------- */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const geometry = new THREE.IcosahedronGeometry(1.5, 1);
+const material = new THREE.MeshStandardMaterial({ color: 0x4c7dff, wireframe: true });
+const core = new THREE.Mesh(geometry, material);
+scene.add(core);
+
+const light = new THREE.PointLight(0xffffff, 1);
+light.position.set(5, 5, 5);
+scene.add(light);
+
+camera.position.z = 5;
+
+function animate() {
+    requestAnimationFrame(animate);
+    core.rotation.x += 0.002;
+    core.rotation.y += 0.003;
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ---------- API CALL ---------- */
+async function copyGame() {
+    const url = document.getElementById("urlInput").value;
+    const status = document.getElementById("status");
+
+    if (!url) {
+        status.textContent = "Please paste a game URL.";
+        return;
+    }
+
+    status.textContent = "Analyzing game…";
+
+    try {
+        const response = await fetch("https://TU-BACKEND-AQUI/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) throw new Error("Generation failed");
+
+        const blob = await response.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Game-Copier.rbxl";
+        a.click();
+
+        status.textContent = "Game generated!";
+    } catch {
+        status.textContent = "Error generating game.";
+    }
+}
+</script>
+
+</body>
+</html>
